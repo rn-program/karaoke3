@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8">
+  <title>カラオケ採点</title>
+  <link rel="stylesheet" href="static/css/sing.css">
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1 id="music_name">{{music_name}}</h1>
+      <audio id="player" controls></audio>
+    </div>
+  </div>
+
+  <div class="card">
+    <div>現在ピッチ: <span id="pitch">— Hz</span></div>
+    <div>判定: <span id="note">—</span></div>
+    <div>合計スコア: <span id="score">0</span></div>
+    <div id="pitchGraph">
+      <canvas id="pitchCanvas"></canvas>
+      <div id="timeMarker"></div>
+    </div>
+  </div>
+
+  <div id="lyrics">
+    <!--歌詞をここに表示-->
+  </div>
+
+  <script>music_name = document.getElementById("music_name").innerText;</script>
+  <script src="static/js/sing.js"></script>
+</body>
+</html>
