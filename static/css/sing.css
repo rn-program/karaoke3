@@ -74,15 +74,21 @@ button {
   font-size: 28px;
   margin-top: 20px;
   text-align: center;
-  height: 200px;              /* 必要に応じて高さ調整 */
+  height: 200px;
+  /* 必要に応じて高さ調整 */
   display: flex;
   flex-direction: column;
-  justify-content: flex-start; /* 中央揃え → 上揃え */
-  overflow-y: auto;            /* 縦スクロールを有効化 */
-  padding: 10px;               /* 内側余白で見やすく */
-  border: 1px solid rgba(255,255,255,0.2); /* 枠線 optional */
+  justify-content: flex-start;
+  /* 中央揃え → 上揃え */
+  overflow-y: auto;
+  /* 縦スクロールを有効化 */
+  padding: 10px;
+  /* 内側余白で見やすく */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  /* 枠線 optional */
   border-radius: 8px;
-  background: rgba(0,0,0,0.2); /* 背景 optional */
+  background: rgba(0, 0, 0, 0.2);
+  /* 背景 optional */
   position: relative;
 }
 
@@ -90,7 +96,8 @@ button {
 .lyric-line {
   opacity: 0.5;
   transition: all 0.3s ease;
-  margin: 4px 0; /* 行間を確保 */
+  margin: 4px 0;
+  /* 行間を確保 */
 }
 
 .lyric-line.current {
@@ -132,4 +139,16 @@ button {
   background: rgba(255, 0, 0, 0.8);
   left: 0;
   pointer-events: none;
+}
+
+/* 再生・停止ボタンの簡易スタイル */
+.player-buttons {
+  margin: 10px 0;
+}
+
+.player-buttons button {
+  font-size: 16px;
+  padding: 8px 16px;
+  margin-right: 10px;
+  cursor: pointer;
 }

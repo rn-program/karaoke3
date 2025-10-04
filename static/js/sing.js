@@ -1,9 +1,8 @@
 // ==================================================
-// sing.js 完全版 (iPad対応・ボタン再生・マイク同期・シーク禁止)
+// sing.js 完全版 (iPad対応・ボタン再生・マイク同期・シーク禁止・初回ズレ修正)
 // ==================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-    // HTML要素取得
     const player = document.getElementById("player");
     const music_name = document.getElementById("music_name").innerText;
 
@@ -96,8 +95,15 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(r => r.json())
         .then(data => {
             pitchData = data;
-            resizeCanvas();
-            drawPitch();
+            if(player.readyState >= 1){ // メタデータ取得済み
+                resizeCanvas();
+                drawPitch();
+            } else {
+                player.addEventListener("loadedmetadata", () => {
+                    resizeCanvas();
+                    drawPitch();
+                }, { once: true });
+            }
         })
         .catch(err => console.error("ピッチ読み込みエラー:", err));
 
@@ -125,11 +131,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const val = (Math.log2(freq) - logMin) / (logMax - logMin);
         return H - val * H;
     }
+
     function timeToX(t) {
         const W = canvas.clientWidth;
-        const total = player.duration || (pitchData.frames.length > 0 ? pitchData.frames[pitchData.frames.length-1].t : 0);
+        const total = player.duration || (pitchData?.segments?.length ? pitchData.segments[pitchData.segments.length-1].end : 1);
         return (t / total) * W;
     }
+
     function drawPitch() {
         if (!pitchData) return;
         ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
@@ -152,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!pitchData) return;
         const t = player.currentTime;
         const W = canvas.clientWidth;
-        const left = (t / player.duration) * W;
+        const left = (t / (player.duration || 1)) * W;
         marker.style.left = left + "px";
     });
 
@@ -176,7 +184,9 @@ document.addEventListener("DOMContentLoaded", () => {
     async function initMic() {
         try {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            micStream = await navigator.mediaDevices.getUserMedia({
+                audio: { echoCancellation:false, noiseSuppression:false, autoGainControl:false }
+            });
             const source = audioCtx.createMediaStreamSource(micStream);
             analyser = audioCtx.createAnalyser();
             analyser.fftSize = 2048;
