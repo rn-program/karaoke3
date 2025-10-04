@@ -1,19 +1,26 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <title>曲選択 - カラオケアプリ風</title>
     <link rel="stylesheet" href="static/css/index.css">
 </head>
+
 <body>
     <div class="search_area">
         <input type="text" placeholder="曲名を入力" id="music_input">
         <button type="button" id="search_btn">検索</button>
     </div>
 
-    <!-- 検索結果表示 -->
-    <div id="searched_music"></div>
+    <!-- 検索結果ボックスは search_area の下に置く -->
+    <div id="searched_music_box">
+        <div id="searched_music"></div>
+    </div>
+
+
 
     <script src="static/js/index.js"></script>
 </body>
+
 </html>

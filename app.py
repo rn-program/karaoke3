@@ -19,11 +19,6 @@ def sing():
     music_name = request.args.get("music_name")
     return render_template("sing.html", music_name=music_name)
 
-# 採点画面に遷移
-@app.route("/result")
-def result():
-    return render_template("result.html")
-
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

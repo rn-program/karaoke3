@@ -1,5 +1,5 @@
 // ==================================================
-// sing.js 完全版 (iPad対応・ボタン再生・マイク同期・シーク禁止・初回ズレ修正・曲終了遷移・100点満点採点)
+// sing.js 完全版 (iPad対応・マイク同期・シーク禁止・曲終了遷移・滑らかユーザーピッチ表示)
 // ==================================================
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -21,9 +21,6 @@ document.addEventListener("DOMContentLoaded", () => {
     player.src = audioURL_wav;
     player.load();
 
-    // ==================================================
-    // 再生・停止ボタン
-    // ==================================================
     const playBtn = document.getElementById("playBtn");
     const pauseBtn = document.getElementById("pauseBtn");
     const reloadBtn = document.getElementById("reloadBtn");
@@ -32,10 +29,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     playBtn.addEventListener("click", async () => {
         if (!micStarted) {
-            await initMic();       // マイク初期化
+            await initMic();
             micStarted = true;
         }
-        player.play();             // 曲再生
+        player.play();
     });
 
     pauseBtn.addEventListener("click", () => {
@@ -44,16 +41,11 @@ document.addEventListener("DOMContentLoaded", () => {
         micStarted = false;
     });
 
-    reloadBtn.addEventListener("click", () => {
-        location.reload();
-    });
+    reloadBtn.addEventListener("click", () => location.reload());
 
-    // ==================================================
-    // 曲終了時に result.html に遷移
-    // ==================================================
     player.addEventListener("ended", () => {
         stopMic();
-        location.href = "/result";
+        location.href = "/";
     });
 
     // ==================================================
@@ -80,25 +72,18 @@ document.addEventListener("DOMContentLoaded", () => {
     player.addEventListener("timeupdate", () => {
         const currentTime = player.currentTime;
         const lines = document.querySelectorAll(".lyric-line");
-        if (lines.length === 0) return;
-
+        if (!lines.length) return;
         let currentIndex = -1;
         lines.forEach((line, idx) => {
-            const lineTime = parseFloat(line.dataset.time);
-            if (currentTime >= lineTime) currentIndex = idx;
+            if (currentTime >= parseFloat(line.dataset.time)) currentIndex = idx;
         });
-
-        let currentLine = null;
         lines.forEach((line, idx) => {
             line.classList.remove("past", "current", "future");
             if (idx < currentIndex) line.classList.add("past");
-            else if (idx === currentIndex) {
-                line.classList.add("current");
-                currentLine = line;
-            } else line.classList.add("future");
+            else if (idx === currentIndex) line.classList.add("current");
+            else line.classList.add("future");
         });
-
-        if (currentLine) currentLine.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (currentIndex >= 0) lines[currentIndex].scrollIntoView({ behavior: "smooth", block: "center" });
     });
 
     // ==================================================
@@ -109,15 +94,8 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(r => r.json())
         .then(data => {
             pitchData = data;
-            if (player.readyState >= 1) { // メタデータ取得済み
-                resizeCanvas();
-                drawPitch();
-            } else {
-                player.addEventListener("loadedmetadata", () => {
-                    resizeCanvas();
-                    drawPitch();
-                }, { once: true });
-            }
+            if (player.readyState >= 1) { resizeCanvas(); drawPitch(); }
+            else player.addEventListener("loadedmetadata", () => { resizeCanvas(); drawPitch(); }, { once: true });
         })
         .catch(err => console.error("ピッチ読み込みエラー:", err));
 
@@ -133,17 +111,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     window.addEventListener("resize", resizeCanvas);
 
-    // ==================================================
-    // ピッチ描画ユーティリティ
-    // ==================================================
     const fmin = 65, fmax = 1500;
     function freqToY(freq) {
         const H = canvas.clientHeight;
         if (!freq || freq <= 0) return H;
-        const logMin = Math.log2(fmin);
-        const logMax = Math.log2(fmax);
-        const val = (Math.log2(freq) - logMin) / (logMax - logMin);
-        return H - val * H;
+        return H - ((Math.log2(freq) - Math.log2(fmin)) / (Math.log2(fmax) - Math.log2(fmin))) * H;
     }
 
     function timeToX(t) {
@@ -152,7 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return (t / total) * W;
     }
 
-    let userPitchHistory = []; // ユーザーの声のピッチ履歴
+    let userPitchHistory = [];
 
     function drawPitch() {
         if (!pitchData) return;
@@ -170,62 +142,50 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         ctx.restore();
 
-        // ユーザーのピッチ（水色）
-        if (userPitchHistory.length > 0) {
+        // ユーザーピッチ（水色・線で描画）
+        if (userPitchHistory.length > 1) {
             ctx.save();
+            ctx.strokeStyle = "#3399ff";
+            ctx.lineWidth = 2;
             ctx.globalAlpha = 0.8;
-            ctx.fillStyle = "#3399ff";
-            userPitchHistory.forEach(p => {
+            ctx.beginPath();
+            userPitchHistory.forEach((p, idx) => {
                 const x = timeToX(p.time);
                 const y = freqToY(p.freq);
-                ctx.fillRect(x - 1, y - 5, 2, 10);
+                if (idx === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
             });
+            ctx.stroke();
             ctx.restore();
         }
+
+        requestAnimationFrame(drawPitch);
     }
 
-    // ==================================================
-    // マーカー移動
-    // ==================================================
     player.addEventListener("timeupdate", () => {
-        if (!pitchData) return;
         const t = player.currentTime;
-        const W = canvas.clientWidth;
-        marker.style.left = (t / (player.duration || 1) * W) + "px";
+        marker.style.left = (t / (player.duration || 1) * canvas.clientWidth) + "px";
     });
 
-    // ==================================================
-    // ユーザーによるシーク禁止
-    // ==================================================
-    player.addEventListener("seeking", () => {
-        player.currentTime = player.lastTime || 0;
-    });
-    player.addEventListener("timeupdate", () => {
-        player.lastTime = player.currentTime;
-    });
+    player.addEventListener("seeking", () => player.currentTime = player.lastTime || 0);
+    player.addEventListener("timeupdate", () => player.lastTime = player.currentTime);
 
     // ==================================================
-    // マイク・リアルタイム採点設定（100点満点）
+    // マイク・リアルタイムピッチ表示
     // ==================================================
     let audioCtx, analyser, micStream;
-    let totalScore = 0;     // 累積スコア
-    let sampleCount = 0;    // サンプル数
     let pitchLoopId = null;
 
     async function initMic() {
         try {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            micStream = await navigator.mediaDevices.getUserMedia({
-                audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
-            });
+            micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
             const source = audioCtx.createMediaStreamSource(micStream);
             analyser = audioCtx.createAnalyser();
             analyser.fftSize = 2048;
             source.connect(analyser);
             detectPitch();
-        } catch (err) {
-            console.error("マイク初期化エラー:", err);
-        }
+        } catch (err) { console.error("マイク初期化エラー:", err); }
     }
 
     function detectPitch() {
@@ -234,10 +194,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const freq = autoCorrelate(buffer, audioCtx.sampleRate);
         if (freq > 0) {
             const t = player.currentTime;
-            userPitchHistory.push({ time: t, freq: freq }); // 保存
+            userPitchHistory.push({ time: t, freq: freq });
             updatePitchUI(freq);
-            updateScore(freq);
-            drawPitch();
         }
         pitchLoopId = requestAnimationFrame(detectPitch);
     }
@@ -276,27 +234,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("note").textContent = noteName;
     }
 
-    function updateScore(userFreq) {
-        if (!pitchData) return;
-        const t = player.currentTime;
-        const seg = pitchData.segments.find(s => s.start <= t && t <= s.end);
-        if (!seg) return;
-
-        const diff = Math.abs(12 * Math.log2(userFreq / seg.freq));
-        const sampleScore = Math.max(0, 100 * (1 - diff / 0.5));
-
-        totalScore += sampleScore;
-        sampleCount++;
-        const avgScore = sampleCount > 0 ? totalScore / sampleCount : 0;
-        document.getElementById("score").textContent = Math.round(avgScore);
-    }
-
-    function freqToNote(freq) {
-        return Math.round(12 * (Math.log2(freq / 440)) + 69);
-    }
-
+    function freqToNote(freq) { return Math.round(12 * (Math.log2(freq / 440)) + 69); }
     const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-    function noteFromMidi(midi) {
-        return noteNames[midi % 12] + Math.floor(midi / 12 - 1);
-    }
+    function noteFromMidi(midi) { return noteNames[midi % 12] + Math.floor(midi / 12 - 1); }
 });
