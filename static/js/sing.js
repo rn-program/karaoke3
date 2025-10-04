@@ -32,10 +32,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     playBtn.addEventListener("click", async () => {
         if (!micStarted) {
-            await initMic();
+            await initMic();       // マイク初期化
             micStarted = true;
         }
-        player.play();
+        player.play();             // 曲再生
     });
 
     pauseBtn.addEventListener("click", () => {
@@ -45,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     reloadBtn.addEventListener("click", () => {
-        location.reload();  // ページ全体をリロード
+        location.reload();
     });
 
     // ==================================================
@@ -152,9 +152,13 @@ document.addEventListener("DOMContentLoaded", () => {
         return (t / total) * W;
     }
 
+    let userPitchHistory = []; // ユーザーの声のピッチ履歴
+
     function drawPitch() {
         if (!pitchData) return;
         ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+
+        // 曲のピッチ（緑）
         ctx.save();
         ctx.globalAlpha = 0.55;
         pitchData.segments.forEach(seg => {
@@ -165,6 +169,19 @@ document.addEventListener("DOMContentLoaded", () => {
             ctx.fillRect(x1, y - 5, Math.max(2, x2 - x1), 10);
         });
         ctx.restore();
+
+        // ユーザーのピッチ（水色）
+        if (userPitchHistory.length > 0) {
+            ctx.save();
+            ctx.globalAlpha = 0.8;
+            ctx.fillStyle = "#3399ff";
+            userPitchHistory.forEach(p => {
+                const x = timeToX(p.time);
+                const y = freqToY(p.freq);
+                ctx.fillRect(x - 1, y - 5, 2, 10);
+            });
+            ctx.restore();
+        }
     }
 
     // ==================================================
@@ -216,8 +233,11 @@ document.addEventListener("DOMContentLoaded", () => {
         analyser.getFloatTimeDomainData(buffer);
         const freq = autoCorrelate(buffer, audioCtx.sampleRate);
         if (freq > 0) {
+            const t = player.currentTime;
+            userPitchHistory.push({ time: t, freq: freq }); // 保存
             updatePitchUI(freq);
             updateScore(freq);
+            drawPitch();
         }
         pitchLoopId = requestAnimationFrame(detectPitch);
     }
@@ -262,16 +282,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const seg = pitchData.segments.find(s => s.start <= t && t <= s.end);
         if (!seg) return;
 
-        // 半音差
         const diff = Math.abs(12 * Math.log2(userFreq / seg.freq));
-
-        // 0.5半音以内で100点満点、1半音以上で0点
         const sampleScore = Math.max(0, 100 * (1 - diff / 0.5));
 
         totalScore += sampleScore;
         sampleCount++;
-
-        // 平均スコアを表示
         const avgScore = sampleCount > 0 ? totalScore / sampleCount : 0;
         document.getElementById("score").textContent = Math.round(avgScore);
     }
