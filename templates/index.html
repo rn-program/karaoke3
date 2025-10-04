@@ -2,22 +2,18 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>曲選択</title>
+    <title>曲選択 - カラオケアプリ風</title>
+    <link rel="stylesheet" href="static/css/index.css">
 </head>
 <body>
-    <h1>歌詞ファイル作成GUIの精度をもう少し高く</h1>
-    <form action="/choose_music" method="post">
-        <input type="text" placeholder="曲名を入力" name="music_name">
-        <button type="submit">送信</button>
-    </form>
-    <!--検索結果の表示-->
-    <!--将来的にはアーティスト名からの検索・同一タイトル曲を複数表示させるなど、改良点が多い-->
+    <div class="search_area">
+        <input type="text" placeholder="曲名を入力" id="music_input">
+        <button type="button" id="search_btn">検索</button>
+    </div>
+
+    <!-- 検索結果表示 -->
     <div id="searched_music"></div>
 
-    <script src="static\js\index.js"></script>
-    <script>
-        const music_name = "{{music_name}}"
-        display_music(music_name);
-    </script>
+    <script src="static/js/index.js"></script>
 </body>
 </html>

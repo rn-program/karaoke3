@@ -1,0 +1,85 @@
+/* 全体背景 */
+body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(to bottom, #071029, #0b1c3c);
+    color: #E6EEF8;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 20px;
+    min-height: 100vh;
+}
+
+/* 入力・ボタンエリア */
+.search_area {
+    text-align: center;
+    margin-bottom: 10px; /* 検索結果と近くなるよう短めに */
+}
+
+input[type="text"] {
+    padding: 10px 15px;
+    font-size: 18px;
+    border-radius: 8px;
+    border: none;
+    width: 250px;
+    margin-right: 10px;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 18px;
+    border-radius: 8px;
+    border: none;
+    background: #EF4444;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+button:hover {
+    background: #FF6F61;
+    transform: scale(1.05);
+}
+
+/* 検索結果表示エリア */
+#searched_music {
+    margin-top: 0;
+    display: block;
+}
+
+#searched_music .song_item {
+    display: flex;             /* 横並び */
+    justify-content: space-between; /* 左右に分ける */
+    align-items: center;
+    width: 400px;              /* 必要に応じて固定幅 */
+    margin: 5px auto;          /* 中央に配置 */
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+}
+
+/* 曲ボタン */
+#searched_music .song_item button {
+    background: #00AA66;
+    color: white;
+    font-weight: bold;
+    padding: 6px 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: all 0.2s ease;
+}
+
+#searched_music .song_item button:hover {
+    background: #00CC88;
+    transform: scale(1.05);
+}
+
+/* 曲が登録されていない場合の表示 */
+#searched_music .no_song {
+    color: #FF4081;
+    font-weight: bold;
+    font-size: 20px;
+    text-align: center;
+    margin-top: 10px;
+}

@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <title>カラオケ採点</title>
+  <title>カラオケ音程採点</title>
   <link rel="stylesheet" href="static/css/sing.css">
 </head>
 
@@ -11,13 +11,13 @@
   <div class="wrap">
     <div class="card">
       <h1 id="music_name">{{music_name}}</h1>
-      <!-- controlsを削除 -->
       <audio id="player"></audio>
 
-      <!-- 再生・停止ボタン -->
+      <!-- 再生・停止・やり直しボタン -->
       <div class="player-buttons">
         <button id="playBtn">再生</button>
         <button id="pauseBtn">停止</button>
+        <button id="reloadBtn">やり直し</button>
       </div>
     </div>
   </div>
@@ -36,9 +36,6 @@
     <!--歌詞をここに表示-->
   </div>
 
-  <script>
-    const music_name = document.getElementById("music_name").innerText;
-  </script>
   <script src="static/js/sing.js"></script>
 </body>
 </html>

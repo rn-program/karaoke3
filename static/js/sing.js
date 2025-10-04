@@ -1,5 +1,5 @@
 // ==================================================
-// sing.js 完全版 (iPad対応・ボタン再生・マイク同期・シーク禁止・初回ズレ修正)
+// sing.js 完全版 (iPad対応・ボタン再生・マイク同期・シーク禁止・初回ズレ修正・曲終了遷移・100点満点採点)
 // ==================================================
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -26,6 +26,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==================================================
     const playBtn = document.getElementById("playBtn");
     const pauseBtn = document.getElementById("pauseBtn");
+    const reloadBtn = document.getElementById("reloadBtn");
+
     let micStarted = false;
 
     playBtn.addEventListener("click", async () => {
@@ -40,6 +42,18 @@ document.addEventListener("DOMContentLoaded", () => {
         player.pause();
         stopMic();
         micStarted = false;
+    });
+
+    reloadBtn.addEventListener("click", () => {
+        location.reload();  // ページ全体をリロード
+    });
+
+    // ==================================================
+    // 曲終了時に result.html に遷移
+    // ==================================================
+    player.addEventListener("ended", () => {
+        stopMic();
+        location.href = "/result";
     });
 
     // ==================================================
@@ -95,7 +109,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(r => r.json())
         .then(data => {
             pitchData = data;
-            if(player.readyState >= 1){ // メタデータ取得済み
+            if (player.readyState >= 1) { // メタデータ取得済み
                 resizeCanvas();
                 drawPitch();
             } else {
@@ -134,7 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function timeToX(t) {
         const W = canvas.clientWidth;
-        const total = player.duration || (pitchData?.segments?.length ? pitchData.segments[pitchData.segments.length-1].end : 1);
+        const total = player.duration || (pitchData?.segments?.length ? pitchData.segments[pitchData.segments.length - 1].end : 1);
         return (t / total) * W;
     }
 
@@ -148,7 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const x2 = timeToX(seg.end);
             const y = freqToY(seg.freq);
             ctx.fillStyle = "#00aa66";
-            ctx.fillRect(x1, y-5, Math.max(2,x2-x1), 10);
+            ctx.fillRect(x1, y - 5, Math.max(2, x2 - x1), 10);
         });
         ctx.restore();
     }
@@ -160,8 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!pitchData) return;
         const t = player.currentTime;
         const W = canvas.clientWidth;
-        const left = (t / (player.duration || 1)) * W;
-        marker.style.left = left + "px";
+        marker.style.left = (t / (player.duration || 1) * W) + "px";
     });
 
     // ==================================================
@@ -175,24 +188,25 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // ==================================================
-    // マイク・リアルタイム採点設定
+    // マイク・リアルタイム採点設定（100点満点）
     // ==================================================
     let audioCtx, analyser, micStream;
-    let score = 0;
+    let totalScore = 0;     // 累積スコア
+    let sampleCount = 0;    // サンプル数
     let pitchLoopId = null;
 
     async function initMic() {
         try {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             micStream = await navigator.mediaDevices.getUserMedia({
-                audio: { echoCancellation:false, noiseSuppression:false, autoGainControl:false }
+                audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
             });
             const source = audioCtx.createMediaStreamSource(micStream);
             analyser = audioCtx.createAnalyser();
             analyser.fftSize = 2048;
             source.connect(analyser);
-            detectPitch(); // ループ開始
-        } catch(err) {
+            detectPitch();
+        } catch (err) {
             console.error("マイク初期化エラー:", err);
         }
     }
@@ -219,47 +233,55 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function autoCorrelate(buf, sampleRate) {
         const SIZE = buf.length;
-        const rms = Math.sqrt(buf.reduce((sum, val) => sum+val*val,0)/SIZE);
+        const rms = Math.sqrt(buf.reduce((sum, val) => sum + val * val, 0) / SIZE);
         if (rms < 0.01) return -1;
-        let r1=0,r2=SIZE-1;
-        while (Math.abs(buf[r1])<0.01) r1++;
-        while (Math.abs(buf[r2])<0.01) r2--;
-        const newBuf = buf.slice(r1,r2);
+        let r1 = 0, r2 = SIZE - 1;
+        while (Math.abs(buf[r1]) < 0.01) r1++;
+        while (Math.abs(buf[r2]) < 0.01) r2--;
+        const newBuf = buf.slice(r1, r2);
         const len = newBuf.length;
-        let bestOffset=-1, bestCorr=0;
-        for(let offset=50; offset<1000; offset++){
-            let corr=0;
-            for(let i=0;i<len-offset;i++) corr+=newBuf[i]*newBuf[i+offset];
-            if(corr>bestCorr){ bestCorr=corr; bestOffset=offset; }
+        let bestOffset = -1, bestCorr = 0;
+        for (let offset = 50; offset < 1000; offset++) {
+            let corr = 0;
+            for (let i = 0; i < len - offset; i++) corr += newBuf[i] * newBuf[i + offset];
+            if (corr > bestCorr) { bestCorr = corr; bestOffset = offset; }
         }
-        return bestOffset>-1 ? sampleRate/bestOffset : -1;
+        return bestOffset > -1 ? sampleRate / bestOffset : -1;
     }
 
     function updatePitchUI(freq) {
-        document.getElementById("pitch").textContent = freq.toFixed(1)+" Hz";
+        document.getElementById("pitch").textContent = freq.toFixed(1) + " Hz";
         const midi = freqToNote(freq);
         const noteName = noteFromMidi(midi);
         document.getElementById("note").textContent = noteName;
     }
 
     function updateScore(userFreq) {
-        if(!pitchData) return;
+        if (!pitchData) return;
         const t = player.currentTime;
-        const seg = pitchData.segments.find(s=>s.start<=t && t<=s.end);
-        if(!seg) return;
-        const diff = Math.abs(12*Math.log2(userFreq/seg.freq));
-        if(diff<0.5){
-            score++;
-            document.getElementById("score").textContent = score;
-        }
+        const seg = pitchData.segments.find(s => s.start <= t && t <= s.end);
+        if (!seg) return;
+
+        // 半音差
+        const diff = Math.abs(12 * Math.log2(userFreq / seg.freq));
+
+        // 0.5半音以内で100点満点、1半音以上で0点
+        const sampleScore = Math.max(0, 100 * (1 - diff / 0.5));
+
+        totalScore += sampleScore;
+        sampleCount++;
+
+        // 平均スコアを表示
+        const avgScore = sampleCount > 0 ? totalScore / sampleCount : 0;
+        document.getElementById("score").textContent = Math.round(avgScore);
     }
 
-    function freqToNote(freq){
-        return Math.round(12*(Math.log2(freq/440))+69);
+    function freqToNote(freq) {
+        return Math.round(12 * (Math.log2(freq / 440)) + 69);
     }
 
-    const noteNames=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
-    function noteFromMidi(midi){
-        return noteNames[midi%12]+Math.floor(midi/12-1);
+    const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    function noteFromMidi(midi) {
+        return noteNames[midi % 12] + Math.floor(midi / 12 - 1);
     }
 });
