@@ -5,13 +5,33 @@
   <meta charset="utf-8">
   <title>カラオケ採点</title>
   <link rel="stylesheet" href="static/css/sing.css">
+  <style>
+    /* 再生・停止ボタンの簡易スタイル */
+    .player-buttons {
+      margin: 10px 0;
+    }
+
+    .player-buttons button {
+      font-size: 16px;
+      padding: 8px 16px;
+      margin-right: 10px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 
 <body>
   <div class="wrap">
     <div class="card">
       <h1 id="music_name">{{music_name}}</h1>
-      <audio id="player" controls></audio>
+      <!-- controlsを削除 -->
+      <audio id="player"></audio>
+
+      <!-- 再生・停止ボタン -->
+      <div class="player-buttons">
+        <button id="playBtn">再生</button>
+        <button id="pauseBtn">停止</button>
+      </div>
     </div>
   </div>
 
@@ -29,7 +49,9 @@
     <!--歌詞をここに表示-->
   </div>
 
-  <script>music_name = document.getElementById("music_name").innerText;</script>
+  <script>
+    const music_name = document.getElementById("music_name").innerText;
+  </script>
   <script src="static/js/sing.js"></script>
 </body>
 </html>
