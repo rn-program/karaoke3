@@ -10,8 +10,8 @@ body {
 
 /* ===== コンテンツ中央 ===== */
 .wrap {
-  width: 80vw;            /* 画面幅に対して相対 */
-  max-width: 900px;       /* 大画面の上限 */
+  width: 80vw;
+  max-width: 900px;
   margin: 0 auto;
 }
 
@@ -28,7 +28,7 @@ body {
 /* ===== 曲名 ===== */
 #music_name {
   text-align: center;
-  font-size: 2.5vw; /* 相対サイズ */
+  font-size: 2.5vw;
   font-weight: bold;
   margin-bottom: 1vh;
   color: #FFD166;
@@ -42,20 +42,20 @@ body {
   font-size: 1.5vw;
 }
 
-#pitchGraph {
+#pitchWrapper {
   width: 100%;
-  height: 20vh;          /* 相対高さ */
+  height: 20vh;
   background: #0B2236;
   border-radius: 0.5rem;
   position: relative;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   margin-top: 1vh;
   border: 1px solid #ccc;
 }
 
 /* ===== Canvas ===== */
 #pitchCanvas {
-  width: 100%;
   height: 100%;
   display: block;
 }
@@ -91,7 +91,7 @@ button {
   font-size: 2vw;
   margin-top: 2vh;
   text-align: center;
-  height: 30vh;               /* 相対高さ */
+  height: 30vh;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -128,6 +128,12 @@ button {
   opacity: 0.6;
 }
 
+/* ===== スライダー ===== */
+#offsetSlider {
+  width: 100%;
+  margin-top: 1vh;
+}
+
 /* ===== 再生・停止ボタン ===== */
 .player-buttons button {
   font-size: 1.5vw;
@@ -137,21 +143,9 @@ button {
 
 /* ===== レスポンシブ対応 ===== */
 @media screen and (max-width: 768px) {
-  #music_name {
-    font-size: 4vw;
-  }
-  #pitch, #note {
-    font-size: 3vw;
-  }
-  button {
-    font-size: 3vw;
-    padding: 1vh 2vw;
-  }
-  #lyrics {
-    font-size: 3vw;
-    height: 35vh;
-  }
-  .lyric-line.current {
-    font-size: 4vw;
-  }
+  #music_name { font-size: 4vw; }
+  #pitch, #note { font-size: 3vw; }
+  button { font-size: 3vw; padding: 1vh 2vw; }
+  #lyrics { font-size: 3vw; height: 35vh; }
+  .lyric-line.current { font-size: 4vw; }
 }

@@ -1,5 +1,5 @@
 // ==================================================
-// sing.js 完全版 (iPad対応・マイク同期・シーク禁止・曲終了遷移・滑らかユーザーピッチ表示)
+// sing.js 完全版（長尺曲対応・自動横スクロール・マイク同期・オフセット調整可能）
 // ==================================================
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const lyricsContainer = document.getElementById("lyrics");
     const canvas = document.getElementById("pitchCanvas");
+    const wrapper = document.getElementById("pitchWrapper");
     const marker = document.getElementById("timeMarker");
     const ctx = canvas.getContext("2d");
 
@@ -26,7 +27,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const reloadBtn = document.getElementById("reloadBtn");
 
     let micStarted = false;
-
     playBtn.addEventListener("click", async () => {
         if (!micStarted) {
             await initMic();
@@ -34,18 +34,30 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         player.play();
     });
-
     pauseBtn.addEventListener("click", () => {
         player.pause();
         stopMic();
         micStarted = false;
     });
-
     reloadBtn.addEventListener("click", () => location.reload());
-
     player.addEventListener("ended", () => {
         stopMic();
         location.href = "/";
+    });
+
+    // ==================================================
+    // ピッチオフセットスライダー
+    // ==================================================
+    let delay_offset = 0.45;
+    const offsetSlider = document.getElementById("offsetSlider");
+    const offsetValue = document.getElementById("offsetValue");
+    offsetSlider.addEventListener("input", () => {
+        delay_offset = parseFloat(offsetSlider.value);
+        offsetValue.textContent = delay_offset.toFixed(2);
+        if (pitchData) pitchData.segments.forEach(seg => {
+            seg.start = seg.origStart + delay_offset;
+            seg.end = seg.origEnd + delay_offset;
+        });
     });
 
     // ==================================================
@@ -94,17 +106,25 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(r => r.json())
         .then(data => {
             pitchData = data;
+            // 元の開始・終了時刻を保存しておく
+            pitchData.segments.forEach(seg => {
+                seg.origStart = seg.start;
+                seg.origEnd = seg.end;
+                seg.start += delay_offset;
+                seg.end += delay_offset;
+            });
             if (player.readyState >= 1) { resizeCanvas(); drawPitch(); }
             else player.addEventListener("loadedmetadata", () => { resizeCanvas(); drawPitch(); }, { once: true });
         })
         .catch(err => console.error("ピッチ読み込みエラー:", err));
 
-    // ==================================================
-    // Canvasリサイズ対応
-    // ==================================================
+    const MAX_WIDTH = 2000;
     function resizeCanvas() {
+        if (!pitchData) return;
         const rect = canvas.getBoundingClientRect();
-        canvas.width = Math.round(rect.width * devicePixelRatio);
+        const totalDuration = player.duration || 1;
+        const canvasWidth = Math.max(rect.width, MAX_WIDTH, totalDuration * (MAX_WIDTH / 30));
+        canvas.width = Math.round(canvasWidth * devicePixelRatio);
         canvas.height = Math.round(rect.height * devicePixelRatio);
         ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
         drawPitch();
@@ -119,13 +139,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function timeToX(t) {
-        const W = canvas.clientWidth;
-        const total = player.duration || (pitchData?.segments?.length ? pitchData.segments[pitchData.segments.length - 1].end : 1);
-        return (t / total) * W;
+        const totalDuration = player.duration || 1;
+        return (t / totalDuration) * canvas.clientWidth;
     }
 
     let userPitchHistory = [];
-
     function drawPitch() {
         if (!pitchData) return;
         ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
@@ -142,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         ctx.restore();
 
-        // ユーザーピッチ（水色・線で描画）
+        // ユーザーピッチ（水色）
         if (userPitchHistory.length > 1) {
             ctx.save();
             ctx.strokeStyle = "#3399ff";
@@ -162,16 +180,20 @@ document.addEventListener("DOMContentLoaded", () => {
         requestAnimationFrame(drawPitch);
     }
 
+    // ==================================================
+    // 自動横スクロール
+    // ==================================================
     player.addEventListener("timeupdate", () => {
         const t = player.currentTime;
+        const scrollWidth = canvas.clientWidth - wrapper.clientWidth;
+        wrapper.scrollLeft = (t / (player.duration || 1)) * scrollWidth;
         marker.style.left = (t / (player.duration || 1) * canvas.clientWidth) + "px";
     });
-
     player.addEventListener("seeking", () => player.currentTime = player.lastTime || 0);
     player.addEventListener("timeupdate", () => player.lastTime = player.currentTime);
 
     // ==================================================
-    // マイク・リアルタイムピッチ表示
+    // マイク・リアルタイムピッチ
     // ==================================================
     let audioCtx, analyser, micStream;
     let pitchLoopId = null;

@@ -20,19 +20,27 @@
         <button id="reloadBtn">やり直し</button>
       </div>
     </div>
-  </div>
 
-  <div class="card">
-    <div>現在ピッチ: <span id="pitch">— Hz</span></div>
-    <div>判定: <span id="note">—</span></div>
-    <div id="pitchGraph">
-      <canvas id="pitchCanvas"></canvas>
-      <div id="timeMarker"></div>
+    <!-- ピッチオフセット調整 -->
+    <div class="card">
+      <label for="offsetSlider">ピッチバー表示オフセット調整（秒）: <span id="offsetValue">0.45</span></label>
+      <input type="range" id="offsetSlider" min="-1" max="1" step="0.01" value="0.45">
     </div>
-  </div>
 
-  <div id="lyrics">
-    <!--歌詞をここに表示-->
+    <!-- ピッチ表示 -->
+    <div class="card">
+      <div>現在ピッチ: <span id="pitch">— Hz</span></div>
+      <div>判定: <span id="note">—</span></div>
+      <div id="pitchWrapper">
+        <canvas id="pitchCanvas"></canvas>
+        <div id="timeMarker"></div>
+      </div>
+    </div>
+
+    <!-- 歌詞表示 -->
+    <div id="lyrics">
+      <!--歌詞をここに表示-->
+    </div>
   </div>
 
   <script src="static/js/sing.js"></script>
