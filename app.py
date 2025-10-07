@@ -4,11 +4,7 @@ from flask import Flask, request, render_template
 app = Flask(__name__)
 
 @app.route("/")
-def jokoji()
-    return render_template("login.html")
-
-@app.route("/index")
-def index():
+def index()
     return render_template("index.html")
 
 # 曲選択を受信
